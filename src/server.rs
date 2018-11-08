@@ -50,7 +50,7 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
                                 future::Either::A(client.request(req))
                             }
                             Some(Err(e)) => {
-                                warn!("Invalid internal uri: {}", e);
+                                warn!("{} -> <invalid>: {}", req.uri(), e);
                                 future::Either::B(future::ok(
                                     Response::builder()
                                         .status(StatusCode::BAD_REQUEST)
@@ -59,7 +59,7 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
                                 ))
                             }
                             None => {
-                                warn!("No matches found");
+                                warn!("{} -> <no match>", req.uri());
                                 future::Either::B(future::ok(
                                     Response::builder()
                                         .status(StatusCode::BAD_GATEWAY)

@@ -18,7 +18,7 @@ pub fn parse(from: Vec<Uri>, to: Vec<Uri>) -> Result<HashMap<SocketAddr, Vec<Red
     struct UnequalFromTo;
 
     #[derive(Debug, Fail)]
-    #[fail(display = "Error while parsing '{}' -> '{}': {}", _0, _1, _2)]
+    #[fail(display = "{} -> {}: {}", _0, _1, _2)]
     struct ParseError(String, String, Error);
 
     #[derive(Debug, Fail)]
@@ -111,7 +111,7 @@ mod tests {
         );
         assert_eq!(
             res.err().unwrap().to_string(),
-            "Error while parsing '/test' -> 'http://localhost:80/': missing host"
+            "/test -> http://localhost:80/: missing host"
         );
     }
 
@@ -123,7 +123,7 @@ mod tests {
         );
         assert_eq!(
             res.err().unwrap().to_string(),
-            "Error while parsing 'http://example.com/' -> 'http://localhost:80/': invalid socket address"
+            "http://example.com/ -> http://localhost:80/: invalid socket address"
         );
     }
 
@@ -135,7 +135,7 @@ mod tests {
         );
         assert_eq!(
             res.err().unwrap().to_string(),
-            "Error while parsing 'localhost:3000' -> 'http://localhost:80/': missing path"
+            "localhost:3000 -> http://localhost:80/: missing path"
         );
     }
 
@@ -147,7 +147,7 @@ mod tests {
         );
         assert_eq!(
             res.err().unwrap().to_string(),
-            "Error while parsing 'http://localhost:3000/' -> 'localhost:80': missing protocol"
+            "http://localhost:3000/ -> localhost:80: missing protocol"
         );
     }
 
