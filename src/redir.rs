@@ -85,8 +85,7 @@ pub fn parse(from: Vec<Uri>, to: Vec<Uri>) -> Result<HashMap<SocketAddr, Vec<Red
 fn best_socket_addr(host: &str) -> Result<SocketAddr, Error> {
     Ok(host
         .to_socket_addrs()?
-        .filter(SocketAddr::is_ipv4)
-        .next()
+        .find(SocketAddr::is_ipv4)
         .into_result()
         .context("no matching hosts found")?)
 }
