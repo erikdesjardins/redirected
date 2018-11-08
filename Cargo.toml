@@ -1,0 +1,16 @@
+[package]
+name = "redirected"
+version = "0.0.0"
+authors = []
+description = "Redirect local traffic somewhere else."
+
+[dependencies]
+env_logger = "0.5"
+hyper = "0.12"
+log = "0.4"
+structopt = { version = "0.2", default-features = false }
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
