@@ -13,10 +13,10 @@ pub struct Options {
     pub verbose: u8,
 
     /// Address to redirect from, e.g. `http://localhost:3000/api/*`
-    #[structopt(short = "f", long = "from")]
+    #[structopt(short = "f", long = "from", raw(required = "true"))]
     pub from: Vec<Uri>,
 
     /// Address to redirect to, e.g. `http://localhost:8080/*`
-    #[structopt(short = "t", long = "to")]
+    #[structopt(short = "t", long = "to", raw(required = "true"))]
     pub to: Vec<Uri>,
 }
