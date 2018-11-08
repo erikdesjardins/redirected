@@ -1,5 +1,6 @@
 extern crate env_logger;
 extern crate failure;
+extern crate futures;
 extern crate hyper;
 extern crate log;
 extern crate structopt;
