@@ -6,7 +6,7 @@ use failure::Error;
 use futures::{future, Future};
 use hyper::service::service_fn;
 use hyper::{rt, Body, Chunk, Client, Response, Server, StatusCode};
-use log::error;
+use log::{error, info, warn};
 
 use redir::Redir;
 
@@ -16,6 +16,7 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
     let servers = mappings.into_iter().map(move |(addr, rules)| {
         let client = client.clone();
         let rules = Arc::new(rules);
+        info!("Binding to {}", addr);
         Server::bind(&addr).serve(move || {
             let client = client.clone();
             let rules = rules.clone();
@@ -35,22 +36,29 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
                     }).map(|u| u.parse());
                 match redir_uri {
                     Some(Ok(uri)) => {
+                        info!("{}", uri);
                         *req.uri_mut() = uri;
                         future::Either::A(client.request(req))
                     }
-                    Some(Err(e)) => future::Either::B(future::ok(
-                        Response::builder()
-                            .status(StatusCode::BAD_REQUEST)
-                            .body(Body::from(Chunk::from(e.to_string())))
-                            .expect("trivial builder usage"),
-                    )),
-                    None => future::Either::B(future::ok(
-                        Response::builder()
-                            .status(StatusCode::BAD_GATEWAY)
-                            .body(Body::from(Chunk::from(
-                                "request matched no redirect rules".to_string(),
-                            ))).expect("trivial builder usage"),
-                    )),
+                    Some(Err(e)) => {
+                        warn!("Invalid internal uri: {}", e);
+                        future::Either::B(future::ok(
+                            Response::builder()
+                                .status(StatusCode::BAD_REQUEST)
+                                .body(Body::from(Chunk::from(e.to_string())))
+                                .expect("trivial builder usage"),
+                        ))
+                    }
+                    None => {
+                        warn!("No matches found");
+                        future::Either::B(future::ok(
+                            Response::builder()
+                                .status(StatusCode::BAD_GATEWAY)
+                                .body(Body::from(Chunk::from(
+                                    "request matched no redirect rules".to_string(),
+                                ))).expect("trivial builder usage"),
+                        ))
+                    }
                 }
             })
         })
