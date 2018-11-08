@@ -3,14 +3,17 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use failure::{Error, ResultExt};
-use futures::{future, Future};
+use futures::future;
 use hyper::service::service_fn;
-use hyper::{rt, Body, Chunk, Client, Response, Server, StatusCode};
-use log::{error, info, warn};
+use hyper::{Body, Chunk, Client, Response, Server, StatusCode};
+use log::{info, warn};
+use tokio::runtime::Runtime;
 
 use redir::Redir;
 
 pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
+    let mut runtime = Runtime::new()?;
+
     let client = Client::new();
 
     let servers = mappings
@@ -71,11 +74,7 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
             Ok(server)
         }).collect::<Result<Vec<_>, _>>()?;
 
-    rt::run(
-        future::join_all(servers)
-            .map(|_| ())
-            .map_err(|e| error!("{}", e)),
-    );
+    runtime.block_on(future::join_all(servers))?;
 
     Ok(())
 }
