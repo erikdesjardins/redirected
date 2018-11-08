@@ -5,7 +5,7 @@ use std::sync::Arc;
 use failure::{Error, ResultExt};
 use futures::future;
 use hyper::service::service_fn;
-use hyper::{Body, Chunk, Client, Response, Server, StatusCode};
+use hyper::{Body, Client, Response, Server, StatusCode};
 use log::{info, warn};
 use tokio::runtime::Runtime;
 
@@ -50,23 +50,16 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
                                 future::Either::A(client.request(req))
                             }
                             Some(Err(e)) => {
-                                warn!("{} -> <invalid>: {}", req.uri(), e);
-                                future::Either::B(future::ok(
-                                    Response::builder()
-                                        .status(StatusCode::BAD_REQUEST)
-                                        .body(Body::from(Chunk::from(e.to_string())))
-                                        .expect("trivial builder usage"),
-                                ))
+                                warn!("{} -> <internal error>: {}", req.uri(), e);
+                                let mut resp = Response::new(Body::empty());
+                                *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                                future::Either::B(future::ok(resp))
                             }
                             None => {
                                 warn!("{} -> <no match>", req.uri());
-                                future::Either::B(future::ok(
-                                    Response::builder()
-                                        .status(StatusCode::BAD_GATEWAY)
-                                        .body(Body::from(Chunk::from(
-                                            "request matched no redirect rules".to_string(),
-                                        ))).expect("trivial builder usage"),
-                                ))
+                                let mut resp = Response::new(Body::empty());
+                                *resp.status_mut() = StatusCode::BAD_GATEWAY;
+                                future::Either::B(future::ok(resp))
                             }
                         }
                     })
