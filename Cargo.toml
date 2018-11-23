@@ -1,11 +1,11 @@
 [package]
 name = "redirected"
-version = "0.1.1"
+version = "0.1.2"
 authors = []
 description = "Redirect local traffic somewhere else."
 
 [dependencies]
-env_logger = "0.5"
+env_logger = { version = "0.6", default-features = false, features = ["humantime"] }
 failure = "0.1"
 futures = "0.1"
 hyper = "0.12"
