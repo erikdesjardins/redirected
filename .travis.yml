@@ -6,33 +6,45 @@ branches:
     - /^v[0-9]/
 cache:
   cargo: true
-addons:
-  apt:
-    packages:
-      - mingw-w64
-      - musl-tools
-before_script:
-  - rustup target add x86_64-unknown-linux-musl
-  - rustup target add x86_64-pc-windows-gnu
-  - rustup component add rustfmt-preview
-  - rustup component add clippy-preview
-script:
-  - cargo fmt --all -- --check
-  - RUSTFLAGS="-D warnings" cargo clippy
-  - cargo test
-  - cargo build --release --target=x86_64-unknown-linux-musl
-  - strip target/x86_64-unknown-linux-musl/release/redirected
-  - ls -lh target/x86_64-unknown-linux-musl/release/redirected
-  - cargo build --release --target=x86_64-pc-windows-gnu
-  - strip target/x86_64-pc-windows-gnu/release/redirected.exe
-  - ls -lh target/x86_64-pc-windows-gnu/release/redirected.exe
-deploy:
-  - provider: releases
-    api_key:
-      secure: Hmx0wNGXJUH+rDZA3MKT3/SnID/oHxf1IrmYkbzASuLjdZ+UrlhMJ1p3n7TnNfPaFQtAo9bliQu+vy8S+5thK6ohEvnVB5Q2SUGljyL6Qi5RXID5ilZHiNmqg8NFgwNXiWZxwqbBWl33XFSzJcsqOVTVcRVFaRdDDXq/xrD5wvkX7L9dCmk6vX41BT+BIil6X9jpiV6PaSbclZsi4PoEvP/kTVY9rZQH6WsleIf41GNyQxvqxoePa1qpYjy5LmJBXJ/lXk8fED7CZmTpuJyN70iMHocpX/TWGxsVoQ30RwFqaQQBuyUnnG3U4dhy9EP9r6bhLKNj/gCSaee1GgnSvxjMsl6VDgtSoX5ePyS1q8fwWYdbGcRDbMxO+Gp3KfLDEB1s8CVk9iObuGz8WKTgZXATdPzs8+rKdzv3UCovr64TIr0ohMYduSKfmOmWdM+svoVGJrh6hhswU2RHqbhZqYSqFQOBElLdcly29suj5M0D+TpBDm7ZysWIkGMeYcHu1p5AMEUcQ6ezOlkaeDSdi1Ut1ejLmy8I1CDnOqJ8YgU8W3EquA9MJ09UEeJpi8J9kg4Ku5xyUDoLKSN3WdoLgMNenwNA1c+JgvtnJ8UN1qTa67nuZr5AzgZSPZ6ZfYcRTusTooXrpLqicqPYaEBgU5E4t7eraIZwE57ZHNZbtSk=
-    file:
-      - target/x86_64-unknown-linux-musl/release/redirected
-      - target/x86_64-pc-windows-gnu/release/redirected.exe
-    skip_cleanup: true
-    on:
-      tags: true
+matrix:
+  include:
+    - name: Test
+      before_script:
+        - rustup component add rustfmt-preview
+        - rustup component add clippy-preview
+      script:
+        - cargo fmt --all -- --check
+        - RUSTFLAGS="-D warnings" cargo clippy
+        - cargo test
+    - name: Linux
+      addons:
+        apt:
+          packages:
+            - musl-tools
+      before_script:
+        - rustup target add x86_64-unknown-linux-musl
+      script:
+        - cargo build --release --target=x86_64-unknown-linux-musl
+        - strip target/x86_64-unknown-linux-musl/release/redirected
+        - ls -lh target/x86_64-unknown-linux-musl/release/redirected
+      deploy:
+        - provider: releases
+          api_key:
+            secure: Hmx0wNGXJUH+rDZA3MKT3/SnID/oHxf1IrmYkbzASuLjdZ+UrlhMJ1p3n7TnNfPaFQtAo9bliQu+vy8S+5thK6ohEvnVB5Q2SUGljyL6Qi5RXID5ilZHiNmqg8NFgwNXiWZxwqbBWl33XFSzJcsqOVTVcRVFaRdDDXq/xrD5wvkX7L9dCmk6vX41BT+BIil6X9jpiV6PaSbclZsi4PoEvP/kTVY9rZQH6WsleIf41GNyQxvqxoePa1qpYjy5LmJBXJ/lXk8fED7CZmTpuJyN70iMHocpX/TWGxsVoQ30RwFqaQQBuyUnnG3U4dhy9EP9r6bhLKNj/gCSaee1GgnSvxjMsl6VDgtSoX5ePyS1q8fwWYdbGcRDbMxO+Gp3KfLDEB1s8CVk9iObuGz8WKTgZXATdPzs8+rKdzv3UCovr64TIr0ohMYduSKfmOmWdM+svoVGJrh6hhswU2RHqbhZqYSqFQOBElLdcly29suj5M0D+TpBDm7ZysWIkGMeYcHu1p5AMEUcQ6ezOlkaeDSdi1Ut1ejLmy8I1CDnOqJ8YgU8W3EquA9MJ09UEeJpi8J9kg4Ku5xyUDoLKSN3WdoLgMNenwNA1c+JgvtnJ8UN1qTa67nuZr5AzgZSPZ6ZfYcRTusTooXrpLqicqPYaEBgU5E4t7eraIZwE57ZHNZbtSk=
+          file: target/x86_64-unknown-linux-musl/release/redirected
+          skip_cleanup: true
+          on:
+            tags: true
+    - name: Windows
+      os: windows
+      script:
+        - cargo build --release
+        - ls -lh target/release/redirected.exe
+      deploy:
+        - provider: releases
+          api_key:
+            secure: Hmx0wNGXJUH+rDZA3MKT3/SnID/oHxf1IrmYkbzASuLjdZ+UrlhMJ1p3n7TnNfPaFQtAo9bliQu+vy8S+5thK6ohEvnVB5Q2SUGljyL6Qi5RXID5ilZHiNmqg8NFgwNXiWZxwqbBWl33XFSzJcsqOVTVcRVFaRdDDXq/xrD5wvkX7L9dCmk6vX41BT+BIil6X9jpiV6PaSbclZsi4PoEvP/kTVY9rZQH6WsleIf41GNyQxvqxoePa1qpYjy5LmJBXJ/lXk8fED7CZmTpuJyN70iMHocpX/TWGxsVoQ30RwFqaQQBuyUnnG3U4dhy9EP9r6bhLKNj/gCSaee1GgnSvxjMsl6VDgtSoX5ePyS1q8fwWYdbGcRDbMxO+Gp3KfLDEB1s8CVk9iObuGz8WKTgZXATdPzs8+rKdzv3UCovr64TIr0ohMYduSKfmOmWdM+svoVGJrh6hhswU2RHqbhZqYSqFQOBElLdcly29suj5M0D+TpBDm7ZysWIkGMeYcHu1p5AMEUcQ6ezOlkaeDSdi1Ut1ejLmy8I1CDnOqJ8YgU8W3EquA9MJ09UEeJpi8J9kg4Ku5xyUDoLKSN3WdoLgMNenwNA1c+JgvtnJ8UN1qTa67nuZr5AzgZSPZ6ZfYcRTusTooXrpLqicqPYaEBgU5E4t7eraIZwE57ZHNZbtSk=
+          file: target/release/redirected.exe
+          skip_cleanup: true
+          on:
+            tags: true
