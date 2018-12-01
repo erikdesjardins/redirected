@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
 
-use failure::{Error, Fail, ResultExt};
+use failure::{bail, Error, ResultExt};
 use hyper::Uri;
 
 use util::OptionExt;
@@ -13,20 +13,8 @@ pub struct Redir {
 }
 
 pub fn parse(from: Vec<Uri>, to: Vec<Uri>) -> Result<HashMap<SocketAddr, Vec<Redir>>, Error> {
-    #[derive(Debug, Fail)]
-    #[fail(display = "Unequal number of `from` and `to` addresses")]
-    struct UnequalFromTo;
-
-    #[derive(Debug, Fail)]
-    #[fail(display = "{} -> {}: {}", _0, _1, _2)]
-    struct ParseError(String, String, Error);
-
-    #[derive(Debug, Fail)]
-    #[fail(display = "Expected address to end with '*'")]
-    struct MustEndWithWildcard;
-
     if from.len() != to.len() {
-        return Err(UnequalFromTo.into());
+        bail!("Unequal number of `from` and `to` addresses");
     }
 
     let mut mappings = HashMap::<_, Vec<_>>::new();
@@ -68,14 +56,14 @@ pub fn parse(from: Vec<Uri>, to: Vec<Uri>) -> Result<HashMap<SocketAddr, Vec<Red
                     from: from_path,
                     to: to_full,
                 },
-                _ => return Err(MustEndWithWildcard.into()),
+                _ => bail!("Expected address to end with '*'"),
             };
 
             Ok((from_addr, rule))
         };
         match go() {
             Ok((addr, rule)) => mappings.entry(addr).or_default().push(rule),
-            Err(e) => return Err(ParseError(from.to_string(), to.to_string(), e).into()),
+            Err(e) => bail!("{} -> {}: {}", from, to, e),
         }
     }
 
