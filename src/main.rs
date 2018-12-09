@@ -2,7 +2,6 @@ mod err;
 mod opt;
 mod redir;
 mod server;
-mod util;
 
 use failure::Error;
 use structopt::StructOpt;
@@ -11,7 +10,12 @@ use structopt::StructOpt;
 static ALLOC: std::alloc::System = std::alloc::System;
 
 fn main() -> Result<(), err::DebugFromDisplay<Error>> {
-    let opt::Options { verbose, from, to } = opt::Options::from_args();
+    let opt::Options {
+        verbose,
+        from_port,
+        from,
+        to,
+    } = opt::Options::from_args();
 
     env_logger::Builder::new()
         .filter_level(match verbose {
@@ -22,9 +26,7 @@ fn main() -> Result<(), err::DebugFromDisplay<Error>> {
         })
         .init();
 
-    let mappings = redir::parse(from, to)?;
-
-    server::run(mappings)?;
+    server::run(&([0, 0, 0, 0], from_port).into(), redir::zip(from, to)?)?;
 
     Ok(())
 }

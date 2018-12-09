@@ -1,5 +1,6 @@
-use hyper::Uri;
 use structopt::StructOpt;
+
+use crate::redir::{RedirectPath, RedirectUri};
 
 #[derive(StructOpt, Debug)]
 pub struct Options {
@@ -12,11 +13,19 @@ pub struct Options {
     )]
     pub verbose: u8,
 
-    /// Address to redirect from, e.g. `http://localhost:3000/api/*`
-    #[structopt(short = "f", long = "from", raw(required = "true"))]
-    pub from: Vec<Uri>,
+    /// Port to redirect from, e.g. `8080`
+    pub from_port: u16,
 
-    /// Address to redirect to, e.g. `http://localhost:8080/*`
-    #[structopt(short = "t", long = "to", raw(required = "true"))]
-    pub to: Vec<Uri>,
+    /// Paths to redirect from, e.g. `/api/*`
+    #[structopt(
+        short = "f",
+        long = "from",
+        raw(required = "true"),
+        parse(try_from_str)
+    )]
+    pub from: Vec<RedirectPath>,
+
+    /// Addresses to redirect to, e.g. `http://localhost:3000/*`
+    #[structopt(short = "t", long = "to", raw(required = "true"), parse(try_from_str))]
+    pub to: Vec<RedirectUri>,
 }
