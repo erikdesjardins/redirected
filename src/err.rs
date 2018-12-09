@@ -1,15 +1,17 @@
 use std::fmt::{self, Debug, Display};
 
-pub struct DebugFromDisplay<T: Display>(T);
+use failure::Error;
 
-impl<T: Display> Debug for DebugFromDisplay<T> {
+pub struct DisplayError(Error);
+
+impl Debug for DisplayError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-impl<T: Display> From<T> for DebugFromDisplay<T> {
+impl<T: Into<Error>> From<T> for DisplayError {
     fn from(display: T) -> Self {
-        DebugFromDisplay(display)
+        DisplayError(display.into())
     }
 }

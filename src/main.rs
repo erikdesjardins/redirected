@@ -3,13 +3,12 @@ mod opt;
 mod redir;
 mod server;
 
-use failure::Error;
 use structopt::StructOpt;
 
 #[global_allocator]
 static ALLOC: std::alloc::System = std::alloc::System;
 
-fn main() -> Result<(), err::DebugFromDisplay<Error>> {
+fn main() -> Result<(), err::DisplayError> {
     let opt::Options {
         verbose,
         from_port,

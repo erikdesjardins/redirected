@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::str::FromStr;
 
-use failure::{Error, Fail};
+use failure::Fail;
 use http::uri::InvalidUri;
 use hyper::Uri;
 
@@ -84,7 +84,7 @@ pub enum BadRedirect {
     UnequalFromTo,
 }
 
-pub fn zip(from: Vec<RedirectPath>, to: Vec<RedirectUri>) -> Result<Vec<Redirect>, Error> {
+pub fn zip(from: Vec<RedirectPath>, to: Vec<RedirectUri>) -> Result<Vec<Redirect>, BadRedirect> {
     if from.len() == to.len() {
         Ok(from
             .into_iter()
@@ -92,6 +92,6 @@ pub fn zip(from: Vec<RedirectPath>, to: Vec<RedirectUri>) -> Result<Vec<Redirect
             .map(|(from, to)| Redirect { from, to })
             .collect())
     } else {
-        Err(BadRedirect::UnequalFromTo.into())
+        Err(BadRedirect::UnequalFromTo)
     }
 }
