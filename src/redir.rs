@@ -153,7 +153,8 @@ mod tests {
                     from: "/api/".to_string(),
                     to: "http://localhost:8080/".to_string(),
                 }]
-            )].into_iter()
+            )]
+            .into_iter()
             .collect()
         )
     }

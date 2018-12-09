@@ -19,7 +19,8 @@ fn main() -> Result<(), err::DebugFromDisplay<Error>> {
             1 => log::LevelFilter::Info,
             2 => log::LevelFilter::Debug,
             _ => log::LevelFilter::Trace,
-        }).init();
+        })
+        .init();
 
     let mappings = redir::parse(from, to)?;
 

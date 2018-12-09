@@ -41,7 +41,8 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
                                         None
                                     }
                                 })
-                            }).map(|u| u.parse());
+                            })
+                            .map(|u| u.parse());
 
                         match redir_uri {
                             Some(Ok(uri)) => {
@@ -65,7 +66,8 @@ pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
                     })
                 });
             Ok(server)
-        }).collect::<Result<Vec<_>, _>>()?;
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
     runtime.block_on(future::join_all(servers))?;
 
