@@ -4,7 +4,7 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use failure::{bail, Error, ResultExt};
 use hyper::Uri;
 
-use util::OptionExt;
+use crate::util::OptionExt;
 
 #[derive(Debug, PartialEq)]
 pub struct Redir {

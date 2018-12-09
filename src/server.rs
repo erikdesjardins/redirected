@@ -9,7 +9,7 @@ use hyper::{Body, Client, Response, Server, StatusCode};
 use log::{info, warn};
 use tokio::runtime::Runtime;
 
-use redir::Redir;
+use crate::redir::Redir;
 
 pub fn run(mappings: HashMap<SocketAddr, Vec<Redir>>) -> Result<(), Error> {
     let mut runtime = Runtime::new()?;
