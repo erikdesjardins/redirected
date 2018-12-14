@@ -57,6 +57,12 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
                         }
                     })
             })),
+            Some(Ok(Action::Status(status))) => {
+                info!("{} -> {}", req.uri(), status);
+                let mut resp = Response::new(Body::empty());
+                *resp.status_mut() = status;
+                B(future::ok(resp))
+            }
             Some(Err(e)) => {
                 warn!("{} -> [internal error] : {}", req.uri(), e);
                 let mut resp = Response::new(Body::empty());

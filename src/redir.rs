@@ -2,8 +2,9 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use failure::Fail;
+use http::status::InvalidStatusCode;
 use http::uri::InvalidUri;
-use hyper::Uri;
+use hyper::{StatusCode, Uri};
 
 use crate::util::IntoOptionExt;
 
@@ -33,6 +34,7 @@ impl FromStr for From {
 pub enum To {
     Http(String),
     File(PathBuf, Option<PathBuf>),
+    Status(StatusCode),
 }
 
 #[derive(Debug, Fail)]
@@ -41,6 +43,8 @@ pub enum BadRedirectTo {
     InvalidUri(InvalidUri),
     #[fail(display = "invalid scheme: {}", _0)]
     InvalidScheme(String),
+    #[fail(display = "invalid status code: {}", _0)]
+    InvalidStatus(InvalidStatusCode),
     #[fail(display = "too many fallbacks provided")]
     TooManyFallbacks,
     #[fail(display = "fallback not allowed: {}", _0)]
@@ -77,6 +81,14 @@ impl FromStr for To {
                     match () {
                         _ if !uri.ends_with('/') => Err(BadRedirectTo::NoTrailingSlash),
                         _ => Ok(To::File(PathBuf::from(uri), fallback.map(PathBuf::from))),
+                    }
+                }
+                (Some("status"), None) => {
+                    match StatusCode::from_bytes(
+                        uri.authority_part().map_or("", |a| a.as_str()).as_bytes(),
+                    ) {
+                        Ok(status) => Ok(To::Status(status)),
+                        Err(e) => Err(BadRedirectTo::InvalidStatus(e)),
                     }
                 }
                 (Some(scheme), None) => Err(BadRedirectTo::InvalidScheme(scheme.to_string())),
@@ -116,7 +128,7 @@ impl Rules {
         self.redirects.iter().find_map(|(from, to)| {
             let req_path = match to {
                 To::Http(..) => uri.path_and_query()?.as_str(),
-                To::File(..) => uri.path(),
+                To::File(..) | To::Status(..) => uri.path(),
             };
             req_path
                 .trim_start_matches(from.0.as_str())
@@ -128,6 +140,7 @@ impl Rules {
                             path: prefix.join(req_tail),
                             fallback: fallback.clone(),
                         },
+                        To::Status(status) => Action::Status(*status),
                     })
                 })
         })
@@ -140,6 +153,7 @@ pub enum Action {
         path: PathBuf,
         fallback: Option<PathBuf>,
     },
+    Status(StatusCode),
 }
 
 #[cfg(test)]
