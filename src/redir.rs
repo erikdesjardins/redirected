@@ -96,6 +96,7 @@ pub enum BadRedirect {
     UnequalFromTo,
 }
 
+#[derive(Debug)]
 pub struct Rules {
     redirects: Vec<(From, To)>,
 }
@@ -139,4 +140,34 @@ pub enum Action {
         path: PathBuf,
         fallback: Option<PathBuf>,
     },
+}
+
+#[cfg(test)]
+#[rustfmt::skip]
+mod tests {
+    use super::*;
+
+    case!(from_just_slash: assert_matches!(Ok(_), From::from_str("/")));
+    case!(from_slash_api: assert_matches!(Ok(_), From::from_str("/api/")));
+    case!(from_multi_slash: assert_matches!(Ok(_), From::from_str("/resources/static/")));
+
+    case!(from_no_leading: assert_matches!(Err(BadRedirectFrom::NoLeadingSlash), From::from_str("foo/")));
+    case!(from_no_trailing: assert_matches!(Err(BadRedirectFrom::NoTrailingSlash), From::from_str("/foo")));
+
+    case!(to_localhost: assert_matches!(Ok(To::Http(_)), To::from_str("http://localhost:3000/")));
+    case!(to_localhost_path: assert_matches!(Ok(To::Http(_)), To::from_str("http://localhost:8080/services/api/")));
+    case!(to_localhost_https: assert_matches!(Ok(To::Http(_)), To::from_str("https://localhost:8080/")));
+    case!(to_file: assert_matches!(Ok(To::File(_, None)), To::from_str("file://./")));
+    case!(to_file_path: assert_matches!(Ok(To::File(_, None)), To::from_str("file://./static/")));
+    case!(to_file_fallback: assert_matches!(Ok(To::File(_, Some(_))), To::from_str("file://./static/|./static/index.html")));
+
+    case!(to_bad_uri: assert_matches!(Err(BadRedirectTo::InvalidUri(_)), To::from_str("example.com/")));
+    case!(to_bad_scheme: assert_matches!(Err(BadRedirectTo::InvalidScheme(_)), To::from_str("ftp://example.com/")));
+    case!(to_many_fallbacks: assert_matches!(Err(BadRedirectTo::TooManyFallbacks), To::from_str("file://./|./|./")));
+    case!(to_bad_fallback: assert_matches!(Err(BadRedirectTo::FallbackNotAllowed(_)), To::from_str("http://example.com/|./")));
+    case!(to_no_trailing: assert_matches!(Err(BadRedirectTo::NoTrailingSlash), To::from_str("http://example.com/foo")));
+    case!(to_no_scheme: assert_matches!(Err(BadRedirectTo::NoScheme), To::from_str("/foo")));
+
+    case!(rules_zip_unequal: assert_matches!(Err(_), Rules::zip(vec![From("/".to_string())], vec![])));
+    case!(rules_zip: assert_matches!(Ok(_), Rules::zip(vec![From("/".to_string())], vec![To::Http("/".to_string())])));
 }

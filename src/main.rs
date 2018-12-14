@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 mod err;
 mod file;
 mod opt;
