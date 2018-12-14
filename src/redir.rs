@@ -2,8 +2,9 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use failure::Fail;
+use http::status::InvalidStatusCode;
 use http::uri::InvalidUri;
-use hyper::Uri;
+use hyper::{StatusCode, Uri};
 
 use crate::util::IntoOptionExt;
 
@@ -32,7 +33,8 @@ impl FromStr for From {
 #[derive(Debug)]
 pub enum To {
     Http(String),
-    File(PathBuf),
+    File(PathBuf, Option<PathBuf>),
+    Status(StatusCode),
 }
 
 #[derive(Debug, Fail)]
@@ -41,34 +43,59 @@ pub enum BadRedirectTo {
     InvalidUri(InvalidUri),
     #[fail(display = "invalid scheme: {}", _0)]
     InvalidScheme(String),
-    #[fail(display = "uri does not end with slash")]
+    #[fail(display = "invalid status code: {}", _0)]
+    InvalidStatus(InvalidStatusCode),
+    #[fail(display = "too many fallbacks provided")]
+    TooManyFallbacks,
+    #[fail(display = "fallback not allowed: {}", _0)]
+    FallbackNotAllowed(String),
+    #[fail(display = "path does not end with slash")]
     NoTrailingSlash,
-    #[fail(display = "uri does not begin with scheme")]
+    #[fail(display = "does not begin with scheme")]
     NoScheme,
 }
 
 impl FromStr for To {
     type Err = BadRedirectTo;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.parse::<Uri>() {
-            Ok(uri) => match uri.scheme_part().map(|s| s.as_str()) {
-                Some("http") | Some("https") => {
+    fn from_str(to_str: &str) -> Result<Self, Self::Err> {
+        let (path, fallback) = {
+            let mut parts = to_str.split('|').fuse();
+            match (parts.next(), parts.next(), parts.next()) {
+                (Some(path), fallback, None) => (path, fallback),
+                _ => return Err(BadRedirectTo::TooManyFallbacks),
+            }
+        };
+
+        match path.parse::<Uri>() {
+            Ok(uri) => match (uri.scheme_part().map(|s| s.as_str()), fallback) {
+                (Some("http"), None) | (Some("https"), None) => {
                     let uri = uri.to_string();
                     match () {
                         _ if !uri.ends_with('/') => Err(BadRedirectTo::NoTrailingSlash),
                         _ => Ok(To::Http(uri)),
                     }
                 }
-                Some("file") => {
+                (Some("file"), fallback) => {
                     let uri =
                         uri.authority_part().map_or("", |a| a.as_str()).to_string() + uri.path();
                     match () {
                         _ if !uri.ends_with('/') => Err(BadRedirectTo::NoTrailingSlash),
-                        _ => Ok(To::File(PathBuf::from(uri))),
+                        _ => Ok(To::File(PathBuf::from(uri), fallback.map(PathBuf::from))),
                     }
                 }
-                Some(scheme) => Err(BadRedirectTo::InvalidScheme(scheme.to_string())),
-                None => Err(BadRedirectTo::NoScheme),
+                (Some("status"), None) => {
+                    match StatusCode::from_bytes(
+                        uri.authority_part().map_or("", |a| a.as_str()).as_bytes(),
+                    ) {
+                        Ok(status) => Ok(To::Status(status)),
+                        Err(e) => Err(BadRedirectTo::InvalidStatus(e)),
+                    }
+                }
+                (Some(scheme), None) => Err(BadRedirectTo::InvalidScheme(scheme.to_string())),
+                (Some(_), Some(fallback)) => {
+                    Err(BadRedirectTo::FallbackNotAllowed(fallback.to_string()))
+                }
+                (None, _) => Err(BadRedirectTo::NoScheme),
             },
             Err(e) => Err(BadRedirectTo::InvalidUri(e)),
         }
@@ -81,6 +108,7 @@ pub enum BadRedirect {
     UnequalFromTo,
 }
 
+#[derive(Debug)]
 pub struct Rules {
     redirects: Vec<(From, To)>,
 }
@@ -97,15 +125,22 @@ impl Rules {
     }
 
     pub fn try_match(&self, uri: &Uri) -> Option<Result<Action, InvalidUri>> {
-        let req_path = uri.path_and_query()?.as_str();
         self.redirects.iter().find_map(|(from, to)| {
+            let req_path = match to {
+                To::Http(..) => uri.path_and_query()?.as_str(),
+                To::File(..) | To::Status(..) => uri.path(),
+            };
             req_path
                 .trim_start_matches(from.0.as_str())
                 .some_if(|&t| t != req_path)
                 .map(|req_tail| {
                     Ok(match to {
                         To::Http(prefix) => Action::Http((prefix.to_string() + req_tail).parse()?),
-                        To::File(prefix) => Action::File(prefix.join(req_tail)),
+                        To::File(prefix, fallback) => Action::File {
+                            path: prefix.join(req_tail),
+                            fallback: fallback.clone(),
+                        },
+                        To::Status(status) => Action::Status(*status),
                     })
                 })
         })
@@ -114,5 +149,39 @@ impl Rules {
 
 pub enum Action {
     Http(Uri),
-    File(PathBuf),
+    File {
+        path: PathBuf,
+        fallback: Option<PathBuf>,
+    },
+    Status(StatusCode),
+}
+
+#[cfg(test)]
+#[rustfmt::skip]
+mod tests {
+    use super::*;
+
+    case!(from_just_slash: assert_matches!(Ok(_), From::from_str("/")));
+    case!(from_slash_api: assert_matches!(Ok(_), From::from_str("/api/")));
+    case!(from_multi_slash: assert_matches!(Ok(_), From::from_str("/resources/static/")));
+
+    case!(from_no_leading: assert_matches!(Err(BadRedirectFrom::NoLeadingSlash), From::from_str("foo/")));
+    case!(from_no_trailing: assert_matches!(Err(BadRedirectFrom::NoTrailingSlash), From::from_str("/foo")));
+
+    case!(to_localhost: assert_matches!(Ok(To::Http(_)), To::from_str("http://localhost:3000/")));
+    case!(to_localhost_path: assert_matches!(Ok(To::Http(_)), To::from_str("http://localhost:8080/services/api/")));
+    case!(to_localhost_https: assert_matches!(Ok(To::Http(_)), To::from_str("https://localhost:8080/")));
+    case!(to_file: assert_matches!(Ok(To::File(_, None)), To::from_str("file://./")));
+    case!(to_file_path: assert_matches!(Ok(To::File(_, None)), To::from_str("file://./static/")));
+    case!(to_file_fallback: assert_matches!(Ok(To::File(_, Some(_))), To::from_str("file://./static/|./static/index.html")));
+
+    case!(to_bad_uri: assert_matches!(Err(BadRedirectTo::InvalidUri(_)), To::from_str("example.com/")));
+    case!(to_bad_scheme: assert_matches!(Err(BadRedirectTo::InvalidScheme(_)), To::from_str("ftp://example.com/")));
+    case!(to_many_fallbacks: assert_matches!(Err(BadRedirectTo::TooManyFallbacks), To::from_str("file://./|./|./")));
+    case!(to_bad_fallback: assert_matches!(Err(BadRedirectTo::FallbackNotAllowed(_)), To::from_str("http://example.com/|./")));
+    case!(to_no_trailing: assert_matches!(Err(BadRedirectTo::NoTrailingSlash), To::from_str("http://example.com/foo")));
+    case!(to_no_scheme: assert_matches!(Err(BadRedirectTo::NoScheme), To::from_str("/foo")));
+
+    case!(rules_zip_unequal: assert_matches!(Err(_), Rules::zip(vec![From("/".to_string())], vec![])));
+    case!(rules_zip: assert_matches!(Ok(_), Rules::zip(vec![From("/".to_string())], vec![To::Http("/".to_string())])));
 }
