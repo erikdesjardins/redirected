@@ -35,7 +35,7 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
                         Ok(Response::new(file::body_stream(file)))
                     }
                     Err(e) => {
-                        warn!("{} -> [{}]", req.uri(), e);
+                        warn!("{} -> [file error] {} : {}", req.uri(), path.display(), e);
                         let mut resp = Response::new(Body::empty());
                         *resp.status_mut() = StatusCode::NOT_FOUND;
                         Ok(resp)
@@ -43,7 +43,7 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
                 },
             ))),
             Some(Err(e)) => {
-                warn!("{} -> [{}]", req.uri(), e);
+                warn!("{} -> [internal error] : {}", req.uri(), e);
                 let mut resp = Response::new(Body::empty());
                 *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
                 B(future::ok(resp))
