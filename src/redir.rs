@@ -12,23 +12,19 @@ pub struct From(String);
 
 #[derive(Debug, Fail)]
 pub enum BadRedirectFrom {
-    #[fail(display = "path does not start with '/'")]
-    MissingSlash,
-    #[fail(display = "path does not end with '*'")]
-    MissingWildcard,
+    #[fail(display = "path does not start with slash")]
+    NoLeadingSlash,
+    #[fail(display = "path does not end with slash")]
+    NoTrailingSlash,
 }
 
 impl FromStr for From {
     type Err = BadRedirectFrom;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with('/') {
-            let mut path = s.to_string();
-            match path.pop() {
-                Some('*') => Ok(From(path)),
-                _ => Err(BadRedirectFrom::MissingWildcard),
-            }
-        } else {
-            Err(BadRedirectFrom::MissingSlash)
+        match () {
+            _ if !s.starts_with('/') => Err(BadRedirectFrom::NoLeadingSlash),
+            _ if !s.ends_with('/') => Err(BadRedirectFrom::NoTrailingSlash),
+            _ => Ok(From(s.to_string())),
         }
     }
 }
@@ -45,10 +41,10 @@ pub enum BadRedirectTo {
     InvalidUri(InvalidUri),
     #[fail(display = "invalid scheme: {}", _0)]
     InvalidScheme(String),
-    #[fail(display = "uri does not end with '*'")]
-    MissingWildcard,
+    #[fail(display = "uri does not end with slash")]
+    NoTrailingSlash,
     #[fail(display = "uri does not begin with scheme")]
-    MissingScheme,
+    NoScheme,
 }
 
 impl FromStr for To {
@@ -57,22 +53,22 @@ impl FromStr for To {
         match s.parse::<Uri>() {
             Ok(uri) => match uri.scheme_part().map(|s| s.as_str()) {
                 Some("http") | Some("https") => {
-                    let mut uri = uri.to_string();
-                    match uri.pop() {
-                        Some('*') => Ok(To::Http(uri)),
-                        _ => Err(BadRedirectTo::MissingWildcard),
+                    let uri = uri.to_string();
+                    match () {
+                        _ if !uri.ends_with('/') => Err(BadRedirectTo::NoTrailingSlash),
+                        _ => Ok(To::Http(uri)),
                     }
                 }
                 Some("file") => {
-                    let mut uri =
+                    let uri =
                         uri.authority_part().map_or("", |a| a.as_str()).to_string() + uri.path();
-                    match uri.pop() {
-                        Some('*') => Ok(To::File(PathBuf::from(uri))),
-                        _ => Err(BadRedirectTo::MissingWildcard),
+                    match () {
+                        _ if !uri.ends_with('/') => Err(BadRedirectTo::NoTrailingSlash),
+                        _ => Ok(To::File(PathBuf::from(uri))),
                     }
                 }
                 Some(scheme) => Err(BadRedirectTo::InvalidScheme(scheme.to_string())),
-                None => Err(BadRedirectTo::MissingScheme),
+                None => Err(BadRedirectTo::NoScheme),
             },
             Err(e) => Err(BadRedirectTo::InvalidUri(e)),
         }

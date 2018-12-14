@@ -16,7 +16,7 @@ pub struct Options {
     /// Port to redirect from, e.g. `8080`
     pub from_port: u16,
 
-    /// Paths to redirect from, e.g. `/api/*`, `/resources/static/*`
+    /// Path prefixes to redirect from, e.g. `/api/`, `/resources/static/`
     #[structopt(
         short = "f",
         long = "from",
@@ -25,7 +25,7 @@ pub struct Options {
     )]
     pub from: Vec<From>,
 
-    /// Addresses to redirect to, e.g. `http://localhost:3000/*`, `file://./static/*`
+    /// Address prefixes to redirect to, e.g. `http://localhost:3000/`, `file://./static/`
     #[structopt(short = "t", long = "to", raw(required = "true"), parse(try_from_str))]
     pub to: Vec<To>,
 }
