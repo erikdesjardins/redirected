@@ -2,11 +2,11 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use failure::Error;
+use futures::future::Either::{A, B};
 use futures::{future, Future};
 use hyper::service::service_fn;
 use hyper::{Body, Client, Response, Server, StatusCode};
 use log::{info, warn};
-use tokio::fs::File;
 use tokio::runtime::Runtime;
 
 use crate::file;
@@ -19,8 +19,6 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
     let rules = Arc::new(rules);
 
     let server = Server::try_bind(&addr)?.serve(move || {
-        use futures::future::Either::{A, B};
-
         let client = client.clone();
         let rules = rules.clone();
 
@@ -30,18 +28,20 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
                 *req.uri_mut() = uri;
                 A(A(client.request(req)))
             }
-            Some(Ok(Action::File(path))) => A(B(File::open(path.clone()).then(move |r| match r {
-                Ok(file) => {
-                    info!("{} -> {}", req.uri(), path.display());
-                    Ok(Response::new(file::body_stream(file)))
-                }
-                Err(e) => {
-                    warn!("{} -> <file error>: {}", req.uri(), e);
-                    let mut resp = Response::new(Body::empty());
-                    *resp.status_mut() = StatusCode::NOT_FOUND;
-                    Ok(resp)
-                }
-            }))),
+            Some(Ok(Action::File(path))) => A(B(file::resolve_or_index(path.clone()).then(
+                move |r| match r {
+                    Ok(file) => {
+                        info!("{} -> {}", req.uri(), path.display());
+                        Ok(Response::new(file::body_stream(file)))
+                    }
+                    Err(e) => {
+                        warn!("{} -> <file error>: {}", req.uri(), e);
+                        let mut resp = Response::new(Body::empty());
+                        *resp.status_mut() = StatusCode::NOT_FOUND;
+                        Ok(resp)
+                    }
+                },
+            ))),
             Some(Err(e)) => {
                 warn!("{} -> <match error>: {}", req.uri(), e);
                 let mut resp = Response::new(Body::empty());
