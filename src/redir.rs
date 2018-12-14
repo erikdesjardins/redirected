@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use failure::Fail;
@@ -35,27 +36,44 @@ impl FromStr for From {
 #[derive(Debug)]
 pub enum To {
     Http(String),
+    File(PathBuf),
 }
 
 #[derive(Debug, Fail)]
 pub enum BadRedirectTo {
     #[fail(display = "invalid uri: {}", _0)]
     InvalidUri(InvalidUri),
+    #[fail(display = "invalid scheme: {}", _0)]
+    InvalidScheme(String),
     #[fail(display = "uri does not end with '*'")]
     MissingWildcard,
+    #[fail(display = "uri does not begin with scheme")]
+    MissingScheme,
 }
 
 impl FromStr for To {
     type Err = BadRedirectTo;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.parse::<Uri>() {
-            Ok(uri) => {
-                let mut uri = uri.to_string();
-                match uri.pop() {
-                    Some('*') => Ok(To::Http(uri)),
-                    _ => Err(BadRedirectTo::MissingWildcard),
+            Ok(uri) => match uri.scheme_part().map(|s| s.as_str()) {
+                Some("http") | Some("https") => {
+                    let mut uri = uri.to_string();
+                    match uri.pop() {
+                        Some('*') => Ok(To::Http(uri)),
+                        _ => Err(BadRedirectTo::MissingWildcard),
+                    }
                 }
-            }
+                Some("file") => {
+                    let mut uri =
+                        uri.authority_part().map_or("", |a| a.as_str()).to_string() + uri.path();
+                    match uri.pop() {
+                        Some('*') => Ok(To::File(PathBuf::from(uri))),
+                        _ => Err(BadRedirectTo::MissingWildcard),
+                    }
+                }
+                Some(scheme) => Err(BadRedirectTo::InvalidScheme(scheme.to_string())),
+                None => Err(BadRedirectTo::MissingScheme),
+            },
             Err(e) => Err(BadRedirectTo::InvalidUri(e)),
         }
     }
@@ -91,6 +109,7 @@ impl Rules {
                 .map(|req_tail| {
                     Ok(match to {
                         To::Http(prefix) => Action::Http((prefix.to_string() + req_tail).parse()?),
+                        To::File(prefix) => Action::File(prefix.join(req_tail)),
                     })
                 })
         })
@@ -99,4 +118,5 @@ impl Rules {
 
 pub enum Action {
     Http(Uri),
+    File(PathBuf),
 }
