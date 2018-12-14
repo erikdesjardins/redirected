@@ -97,8 +97,11 @@ impl Rules {
     }
 
     pub fn try_match(&self, uri: &Uri) -> Option<Result<Action, InvalidUri>> {
-        let req_path = uri.path_and_query()?.as_str();
         self.redirects.iter().find_map(|(from, to)| {
+            let req_path = match to {
+                To::Http(_) => uri.path_and_query()?.as_str(),
+                To::File(_) => uri.path(),
+            };
             req_path
                 .trim_start_matches(from.0.as_str())
                 .some_if(|&t| t != req_path)
