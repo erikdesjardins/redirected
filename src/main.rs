@@ -1,9 +1,13 @@
 mod err;
+mod file;
 mod opt;
 mod redir;
 mod server;
+mod util;
 
 use structopt::StructOpt;
+
+use crate::redir::Rules;
 
 #[global_allocator]
 static ALLOC: std::alloc::System = std::alloc::System;
@@ -25,7 +29,7 @@ fn main() -> Result<(), err::DisplayError> {
         })
         .init();
 
-    server::run(&([0, 0, 0, 0], from_port).into(), redir::zip(from, to)?)?;
+    server::run(&([0, 0, 0, 0], from_port).into(), Rules::zip(from, to)?)?;
 
     Ok(())
 }

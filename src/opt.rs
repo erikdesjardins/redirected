@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 
-use crate::redir::{RedirectPath, RedirectUri};
+use crate::redir::{From, To};
 
 #[derive(StructOpt, Debug)]
 pub struct Options {
@@ -16,16 +16,16 @@ pub struct Options {
     /// Port to redirect from, e.g. `8080`
     pub from_port: u16,
 
-    /// Paths to redirect from, e.g. `/api/*`
+    /// Path prefixes to redirect from, e.g. `/api/`, `/resources/static/`
     #[structopt(
         short = "f",
         long = "from",
         raw(required = "true"),
         parse(try_from_str)
     )]
-    pub from: Vec<RedirectPath>,
+    pub from: Vec<From>,
 
-    /// Addresses to redirect to, e.g. `http://localhost:3000/*`
+    /// Address prefixes to redirect to, e.g. `http://localhost:3000/`, `file://./static/`
     #[structopt(short = "t", long = "to", raw(required = "true"), parse(try_from_str))]
-    pub to: Vec<RedirectUri>,
+    pub to: Vec<To>,
 }
