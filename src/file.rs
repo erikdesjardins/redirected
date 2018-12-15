@@ -11,7 +11,7 @@ pub fn body_stream(mut file: File) -> Body {
         move || -> Result<_, io::Error> {
             match try_ready!(file.poll_read(&mut buf)) {
                 0 => Ok(None.into()),
-                n => Ok(Some(Chunk::from(buf[..n].to_owned())).into()),
+                n => Ok(Some(Chunk::from(buf[..n].to_vec())).into()),
             }
         }
     }))

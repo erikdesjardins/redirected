@@ -1,6 +1,6 @@
 [package]
 name = "redirected"
-version = "0.3.2"
+version = "0.3.3"
 authors = []
 description = "Redirect local traffic somewhere else."
 edition = "2018"

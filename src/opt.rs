@@ -14,7 +14,7 @@ pub struct Options {
     pub verbose: u8,
 
     #[structopt(
-        help = "Port to redirect from",
+        help = "Port to redirect from (--help for more)",
         long_help = r"Port to redirect from
 
 Behavior:
@@ -30,7 +30,7 @@ Examples:
         long = "from",
         raw(required = "true"),
         parse(try_from_str),
-        help = "Path prefixes to redirect from",
+        help = "Path prefixes to redirect from (--help for more)",
         long_help = r"Path prefixes to redirect from
 
 Behavior:
@@ -48,7 +48,7 @@ Examples:
         long = "to",
         raw(required = "true"),
         parse(try_from_str),
-        help = "Address prefixes to redirect to",
+        help = "Address prefixes to redirect to (--help for more)",
         long_help = r"Address prefixes to redirect to
 
 Behavior:
