@@ -12,9 +12,6 @@ use structopt::StructOpt;
 
 use crate::redir::Rules;
 
-#[global_allocator]
-static ALLOC: std::alloc::System = std::alloc::System;
-
 fn main() -> Result<(), err::DisplayError> {
     let opt::Options {
         verbose,
