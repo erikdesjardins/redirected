@@ -6,7 +6,6 @@ use futures::future::Either::{A, B};
 use futures::{future, Future};
 use hyper::service::service_fn;
 use hyper::{Body, Client, Response, Server, StatusCode};
-use log::{info, warn};
 use tokio::fs::File;
 use tokio::runtime::Runtime;
 
@@ -25,7 +24,7 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
 
         service_fn(move |mut req| match rules.try_match(req.uri()) {
             Some(Ok(Action::Http(uri))) => {
-                info!("{} -> {}", req.uri(), uri);
+                log::info!("{} -> {}", req.uri(), uri);
                 *req.uri_mut() = uri;
                 A(A(client.request(req)))
             }
@@ -41,11 +40,11 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
                     })
                     .then(move |r| match r {
                         Ok((resolved, file)) => {
-                            info!("{} -> {}", req.uri(), resolved.display());
+                            log::info!("{} -> {}", req.uri(), resolved.display());
                             Ok(Response::new(file::body_stream(file)))
                         }
                         Err(e) => {
-                            warn!(
+                            log::warn!(
                                 "{} -> [file error] {} (or index/fallback) : {}",
                                 req.uri(),
                                 path.display(),
@@ -58,19 +57,19 @@ pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
                     })
             })),
             Some(Ok(Action::Status(status))) => {
-                info!("{} -> {}", req.uri(), status);
+                log::info!("{} -> {}", req.uri(), status);
                 let mut resp = Response::new(Body::empty());
                 *resp.status_mut() = status;
                 B(future::ok(resp))
             }
             Some(Err(e)) => {
-                warn!("{} -> [internal error] : {}", req.uri(), e);
+                log::warn!("{} -> [internal error] : {}", req.uri(), e);
                 let mut resp = Response::new(Body::empty());
                 *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
                 B(future::ok(resp))
             }
             None => {
-                warn!("{} -> [no match]", req.uri());
+                log::warn!("{} -> [no match]", req.uri());
                 let mut resp = Response::new(Body::empty());
                 *resp.status_mut() = StatusCode::BAD_GATEWAY;
                 B(future::ok(resp))
