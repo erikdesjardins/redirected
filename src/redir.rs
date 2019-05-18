@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use failure::Fail;
+use err_derive::Error;
 use http::status::InvalidStatusCode;
-use http::uri::InvalidUri;
+use http::uri::{InvalidUri, Scheme};
 use hyper::{StatusCode, Uri};
 
 use crate::util::IntoOptionExt;
@@ -11,11 +11,11 @@ use crate::util::IntoOptionExt;
 #[derive(Debug)]
 pub struct From(String);
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum BadRedirectFrom {
-    #[fail(display = "path does not start with slash")]
+    #[error(display = "path does not start with slash")]
     NoLeadingSlash,
-    #[fail(display = "path does not end with slash")]
+    #[error(display = "path does not end with slash")]
     NoTrailingSlash,
 }
 
@@ -37,21 +37,21 @@ pub enum To {
     Status(StatusCode),
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum BadRedirectTo {
-    #[fail(display = "invalid uri: {}", _0)]
+    #[error(display = "invalid uri: {}", _0)]
     InvalidUri(InvalidUri),
-    #[fail(display = "invalid scheme: {}", _0)]
+    #[error(display = "invalid scheme: {}", _0)]
     InvalidScheme(String),
-    #[fail(display = "invalid status code: {}", _0)]
+    #[error(display = "invalid status code: {}", _0)]
     InvalidStatus(InvalidStatusCode),
-    #[fail(display = "too many fallbacks provided")]
+    #[error(display = "too many fallbacks provided")]
     TooManyFallbacks,
-    #[fail(display = "fallback not allowed: {}", _0)]
+    #[error(display = "fallback not allowed: {}", _0)]
     FallbackNotAllowed(String),
-    #[fail(display = "path does not end with slash")]
+    #[error(display = "path does not end with slash")]
     NoTrailingSlash,
-    #[fail(display = "does not begin with scheme")]
+    #[error(display = "does not begin with scheme")]
     NoScheme,
 }
 
@@ -67,7 +67,7 @@ impl FromStr for To {
         };
 
         match path.parse::<Uri>() {
-            Ok(uri) => match (uri.scheme_part().map(|s| s.as_str()), fallback) {
+            Ok(uri) => match (uri.scheme_part().map(Scheme::as_str), fallback) {
                 (Some("http"), None) | (Some("https"), None) => {
                     let uri = uri.to_string();
                     match () {
@@ -102,9 +102,9 @@ impl FromStr for To {
     }
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum BadRedirect {
-    #[fail(display = "unequal number of `from` and `to` arguments")]
+    #[error(display = "unequal number of `from` and `to` arguments")]
     UnequalFromTo,
 }
 
