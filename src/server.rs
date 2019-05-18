@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use failure::Error;
 use futures::future::Either::{A, B};
 use futures::{future, Future};
 use hyper::service::service_fn;
@@ -9,6 +8,7 @@ use hyper::{Body, Client, Response, Server, StatusCode};
 use tokio::fs::File;
 use tokio::runtime::Runtime;
 
+use crate::err::Error;
 use crate::file;
 use crate::redir::{Action, Rules};
 
