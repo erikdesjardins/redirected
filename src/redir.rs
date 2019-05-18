@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use err_derive::Error;
 use http::status::InvalidStatusCode;
-use http::uri::InvalidUri;
+use http::uri::{InvalidUri, Scheme};
 use hyper::{StatusCode, Uri};
 
 use crate::util::IntoOptionExt;
@@ -67,7 +67,7 @@ impl FromStr for To {
         };
 
         match path.parse::<Uri>() {
-            Ok(uri) => match (uri.scheme_part().map(|s| s.as_str()), fallback) {
+            Ok(uri) => match (uri.scheme_part().map(Scheme::as_str), fallback) {
                 (Some("http"), None) | (Some("https"), None) => {
                     let uri = uri.to_string();
                     match () {
