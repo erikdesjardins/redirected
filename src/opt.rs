@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use structopt::StructOpt;
 
 use crate::redir::{From, To};
@@ -14,16 +16,15 @@ pub struct Options {
     pub verbose: u8,
 
     #[structopt(
-        help = "Port to redirect from (--help for more)",
-        long_help = r"Port to redirect from
-
-Behavior:
-    - incoming http connections are received on this port
-
+        help = "Socket address to listen on (--help for more)",
+        long_help = r"Socket address to listen on:
+    - incoming http connections are received on this socket
 Examples:
-    - 3000"
+    - 127.0.0.1:3000
+    - 0.0.0.0:80
+    - [2001:db8::1]:8080"
     )]
-    pub from_port: u16,
+    pub listen_addr: SocketAddr,
 
     #[structopt(
         short = "f",
@@ -31,12 +32,9 @@ Examples:
         raw(required = "true"),
         parse(try_from_str),
         help = "Path prefixes to redirect from (--help for more)",
-        long_help = r"Path prefixes to redirect from
-
-Behavior:
+        long_help = r"Path prefixes to redirect from:
     - each prefix is checked in order, and the first match is chosen
     - 404s if no prefixes match
-
 Examples:
     - /
     - /resources/static/"
@@ -49,12 +47,9 @@ Examples:
         raw(required = "true"),
         parse(try_from_str),
         help = "Address prefixes to redirect to (--help for more)",
-        long_help = r"Address prefixes to redirect to
-
-Behavior:
+        long_help = r"Address prefixes to redirect to:
     - each matching request's tail is appended to the corresponding address prefix
     - some schemes have special behavior
-
 Examples:
     - http://localhost:8080/services/api/
     - file://./static/
