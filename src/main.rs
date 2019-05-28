@@ -15,7 +15,7 @@ use crate::redir::Rules;
 fn main() -> Result<(), err::DisplayError> {
     let opt::Options {
         verbose,
-        from_port,
+        listen_addr,
         from,
         to,
     } = opt::Options::from_args();
@@ -29,7 +29,7 @@ fn main() -> Result<(), err::DisplayError> {
         })
         .init();
 
-    server::run(&([0, 0, 0, 0], from_port).into(), Rules::zip(from, to)?)?;
+    server::run(&listen_addr, Rules::zip(from, to)?)?;
 
     Ok(())
 }

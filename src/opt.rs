@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use structopt::StructOpt;
 
 use crate::redir::{From, To};
@@ -14,16 +16,18 @@ pub struct Options {
     pub verbose: u8,
 
     #[structopt(
-        help = "Port to redirect from (--help for more)",
-        long_help = r"Port to redirect from
+        help = "Socket address to listen on (--help for more)",
+        long_help = r"Socket address to listen on
 
 Behavior:
-    - incoming http connections are received on this port
+    - incoming http connections are received on this socket
 
 Examples:
-    - 3000"
+    - 127.0.0.1:3000
+    - 0.0.0.0:80
+    - [2001:db8::1]:8080"
     )]
-    pub from_port: u16,
+    pub listen_addr: SocketAddr,
 
     #[structopt(
         short = "f",
