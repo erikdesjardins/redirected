@@ -5,6 +5,7 @@ use futures::future::Either::{A, B};
 use futures::{future, Future};
 use hyper::service::service_fn;
 use hyper::{Body, Client, Response, Server, StatusCode};
+use hyper_tls::HttpsConnector;
 use tokio::fs::File;
 use tokio::runtime::Runtime;
 
@@ -15,7 +16,8 @@ use crate::redir::{Action, Rules};
 pub fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
     let mut runtime = Runtime::new()?;
 
-    let client = Client::new();
+    let https_connector = HttpsConnector::new(4)?;
+    let client = Client::builder().build(https_connector);
     let rules = Arc::new(rules);
 
     let server = Server::try_bind(&addr)?.serve(move || {

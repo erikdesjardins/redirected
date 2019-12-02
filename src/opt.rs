@@ -52,6 +52,7 @@ Examples:
     - some schemes have special behavior
 Examples:
     - http://localhost:8080/services/api/
+    - https://test.dev/v1/
     - file://./static/
     - file://./static/|./static/index.html (fallback to ./static/index.html)
     - status://404 (empty response with status 404)"
