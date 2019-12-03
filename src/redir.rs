@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use err_derive::Error;
 use http::status::InvalidStatusCode;
 use http::uri::{InvalidUri, Scheme};
 use hyper::{StatusCode, Uri};
+use thiserror::Error;
 
 use crate::util::IntoOptionExt;
 
@@ -13,9 +13,9 @@ pub struct From(String);
 
 #[derive(Debug, Error)]
 pub enum BadRedirectFrom {
-    #[error(display = "path does not start with slash")]
+    #[error("path does not start with slash")]
     NoLeadingSlash,
-    #[error(display = "path does not end with slash")]
+    #[error("path does not end with slash")]
     NoTrailingSlash,
 }
 
@@ -39,19 +39,19 @@ pub enum To {
 
 #[derive(Debug, Error)]
 pub enum BadRedirectTo {
-    #[error(display = "invalid uri: {}", _0)]
+    #[error("invalid uri: {0}")]
     InvalidUri(InvalidUri),
-    #[error(display = "invalid scheme: {}", _0)]
+    #[error("invalid scheme: {0}")]
     InvalidScheme(String),
-    #[error(display = "invalid status code: {}", _0)]
+    #[error("invalid status code: {0}")]
     InvalidStatus(InvalidStatusCode),
-    #[error(display = "too many fallbacks provided")]
+    #[error("too many fallbacks provided")]
     TooManyFallbacks,
-    #[error(display = "fallback not allowed: {}", _0)]
+    #[error("fallback not allowed: {0}")]
     FallbackNotAllowed(String),
-    #[error(display = "path does not end with slash")]
+    #[error("path does not end with slash")]
     NoTrailingSlash,
-    #[error(display = "does not begin with scheme")]
+    #[error("does not begin with scheme")]
     NoScheme,
 }
 
@@ -104,7 +104,7 @@ impl FromStr for To {
 
 #[derive(Debug, Error)]
 pub enum BadRedirect {
-    #[error(display = "unequal number of `from` and `to` arguments")]
+    #[error("unequal number of `from` and `to` arguments")]
     UnequalFromTo,
 }
 

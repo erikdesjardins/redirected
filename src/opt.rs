@@ -5,12 +5,13 @@ use structopt::StructOpt;
 use crate::redir::{From, To};
 
 #[derive(StructOpt, Debug)]
+#[structopt(about)]
 pub struct Options {
     #[structopt(
         short = "v",
         long = "verbose",
         parse(from_occurrences),
-        raw(global = "true"),
+        global = true,
         help = "Logging verbosity (-v info, -vv debug, -vvv trace)"
     )]
     pub verbose: u8,
@@ -29,7 +30,7 @@ Examples:
     #[structopt(
         short = "f",
         long = "from",
-        raw(required = "true"),
+        required = true,
         parse(try_from_str),
         help = "Path prefixes to redirect from (--help for more)",
         long_help = r"Path prefixes to redirect from:
@@ -44,7 +45,7 @@ Examples:
     #[structopt(
         short = "t",
         long = "to",
-        raw(required = "true"),
+        required = true,
         parse(try_from_str),
         help = "Address prefixes to redirect to (--help for more)",
         long_help = r"Address prefixes to redirect to:
@@ -52,6 +53,7 @@ Examples:
     - some schemes have special behavior
 Examples:
     - http://localhost:8080/services/api/
+    - https://test.dev/v1/
     - file://./static/
     - file://./static/|./static/index.html (fallback to ./static/index.html)
     - status://404 (empty response with status 404)"
