@@ -161,27 +161,27 @@ pub enum Action {
 mod tests {
     use super::*;
 
-    case!(from_just_slash: assert_matches!(Ok(_), From::from_str("/")));
-    case!(from_slash_api: assert_matches!(Ok(_), From::from_str("/api/")));
-    case!(from_multi_slash: assert_matches!(Ok(_), From::from_str("/resources/static/")));
+    case!(from_just_slash: assert!(matches!(From::from_str("/"), Ok(_))));
+    case!(from_slash_api: assert!(matches!(From::from_str("/api/"), Ok(_))));
+    case!(from_multi_slash: assert!(matches!(From::from_str("/resources/static/"), Ok(_))));
 
-    case!(from_no_leading: assert_matches!(Err(BadRedirectFrom::NoLeadingSlash), From::from_str("foo/")));
-    case!(from_no_trailing: assert_matches!(Err(BadRedirectFrom::NoTrailingSlash), From::from_str("/foo")));
+    case!(from_no_leading: assert!(matches!(From::from_str("foo/"), Err(BadRedirectFrom::NoLeadingSlash))));
+    case!(from_no_trailing: assert!(matches!(From::from_str("/foo"), Err(BadRedirectFrom::NoTrailingSlash))));
 
-    case!(to_localhost: assert_matches!(Ok(To::Http(_)), To::from_str("http://localhost:3000/")));
-    case!(to_localhost_path: assert_matches!(Ok(To::Http(_)), To::from_str("http://localhost:8080/services/api/")));
-    case!(to_localhost_https: assert_matches!(Ok(To::Http(_)), To::from_str("https://localhost:8080/")));
-    case!(to_file: assert_matches!(Ok(To::File(_, None)), To::from_str("file://./")));
-    case!(to_file_path: assert_matches!(Ok(To::File(_, None)), To::from_str("file://./static/")));
-    case!(to_file_fallback: assert_matches!(Ok(To::File(_, Some(_))), To::from_str("file://./static/|./static/index.html")));
+    case!(to_localhost: assert!(matches!(To::from_str("http://localhost:3000/"), Ok(To::Http(_)))));
+    case!(to_localhost_path: assert!(matches!(To::from_str("http://localhost:8080/services/api/"), Ok(To::Http(_)))));
+    case!(to_localhost_https: assert!(matches!(To::from_str("https://localhost:8080/"), Ok(To::Http(_)))));
+    case!(to_file: assert!(matches!(To::from_str("file://./"), Ok(To::File(_, None)))));
+    case!(to_file_path: assert!(matches!(To::from_str("file://./static/"), Ok(To::File(_, None)))));
+    case!(to_file_fallback: assert!(matches!(To::from_str("file://./static/|./static/index.html"), Ok(To::File(_, Some(_))))));
 
-    case!(to_bad_uri: assert_matches!(Err(BadRedirectTo::InvalidUri(_)), To::from_str("example.com/")));
-    case!(to_bad_scheme: assert_matches!(Err(BadRedirectTo::InvalidScheme(_)), To::from_str("ftp://example.com/")));
-    case!(to_many_fallbacks: assert_matches!(Err(BadRedirectTo::TooManyFallbacks), To::from_str("file://./|./|./")));
-    case!(to_bad_fallback: assert_matches!(Err(BadRedirectTo::FallbackNotAllowed(_)), To::from_str("http://example.com/|./")));
-    case!(to_no_trailing: assert_matches!(Err(BadRedirectTo::NoTrailingSlash), To::from_str("http://example.com/foo")));
-    case!(to_no_scheme: assert_matches!(Err(BadRedirectTo::NoScheme), To::from_str("/foo")));
+    case!(to_bad_uri: assert!(matches!(To::from_str("example.com/"), Err(BadRedirectTo::InvalidUri(_)))));
+    case!(to_bad_scheme: assert!(matches!(To::from_str("ftp://example.com/"), Err(BadRedirectTo::InvalidScheme(_)))));
+    case!(to_many_fallbacks: assert!(matches!(To::from_str("file://./|./|./"), Err(BadRedirectTo::TooManyFallbacks))));
+    case!(to_bad_fallback: assert!(matches!(To::from_str("http://example.com/|./"), Err(BadRedirectTo::FallbackNotAllowed(_)))));
+    case!(to_no_trailing: assert!(matches!(To::from_str("http://example.com/foo"), Err(BadRedirectTo::NoTrailingSlash))));
+    case!(to_no_scheme: assert!(matches!(To::from_str("/foo"), Err(BadRedirectTo::NoScheme))));
 
-    case!(rules_zip_unequal: assert_matches!(Err(_), Rules::zip(vec![From("/".to_string())], vec![])));
-    case!(rules_zip: assert_matches!(Ok(_), Rules::zip(vec![From("/".to_string())], vec![To::Http("/".to_string())])));
+    case!(rules_zip_unequal: assert!(matches!(Rules::zip(vec![From("/".to_string())], vec![]), Err(_))));
+    case!(rules_zip: assert!(matches!(Rules::zip(vec![From("/".to_string())], vec![To::Http("/".to_string())]), Ok(_))));
 }
