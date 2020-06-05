@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use http::status::InvalidStatusCode;
-use http::uri::{InvalidUri, Scheme};
+use http::uri::InvalidUri;
 use hyper::{StatusCode, Uri};
 use thiserror::Error;
 
@@ -67,7 +67,7 @@ impl FromStr for To {
         };
 
         match path.parse::<Uri>() {
-            Ok(uri) => match (uri.scheme_part().map(Scheme::as_str), fallback) {
+            Ok(uri) => match (uri.scheme().map(|s| s.as_str()), fallback) {
                 (Some("http"), None) | (Some("https"), None) => {
                     let uri = uri.to_string();
                     match () {
@@ -76,8 +76,7 @@ impl FromStr for To {
                     }
                 }
                 (Some("file"), fallback) => {
-                    let uri =
-                        uri.authority_part().map_or("", |a| a.as_str()).to_string() + uri.path();
+                    let uri = uri.authority().map_or("", |a| a.as_str()).to_string() + uri.path();
                     match () {
                         _ if !uri.ends_with('/') => Err(BadRedirectTo::NoTrailingSlash),
                         _ => Ok(To::File(PathBuf::from(uri), fallback.map(PathBuf::from))),
@@ -85,7 +84,7 @@ impl FromStr for To {
                 }
                 (Some("status"), None) => {
                     match StatusCode::from_bytes(
-                        uri.authority_part().map_or("", |a| a.as_str()).as_bytes(),
+                        uri.authority().map_or("", |a| a.as_str()).as_bytes(),
                     ) {
                         Ok(status) => Ok(To::Status(status)),
                         Err(e) => Err(BadRedirectTo::InvalidStatus(e)),
