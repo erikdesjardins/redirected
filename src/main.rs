@@ -5,6 +5,7 @@ mod err;
 mod file;
 mod opt;
 mod redir;
+mod routes;
 mod server;
 mod util;
 

@@ -1,17 +1,16 @@
-use std::io;
-
-use futures::{stream, try_ready};
-use hyper::{Body, Chunk};
+use futures::stream;
+use hyper::Body;
 use tokio::fs::File;
-use tokio::io::AsyncRead;
+use tokio::io::AsyncReadExt;
 
-pub fn body_stream(mut file: File) -> Body {
-    Body::wrap_stream(stream::poll_fn({
+pub fn body_stream(file: File) -> Body {
+    Body::wrap_stream(stream::try_unfold(file, {
         let mut buf = [0; 4 * 1024];
-        move || -> Result<_, io::Error> {
-            match try_ready!(file.poll_read(&mut buf)) {
-                0 => Ok(None.into()),
-                n => Ok(Some(Chunk::from(buf[..n].to_vec())).into()),
+        move |mut file| async move {
+            match file.read(&mut buf).await {
+                Ok(0) => Ok(None),
+                Ok(n) => Ok(Some((buf[..n].to_vec(), file))),
+                Err(e) => Err(e),
             }
         }
     }))
