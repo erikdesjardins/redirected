@@ -1,16 +1,16 @@
 [package]
 name = "redirected"
-version = "0.5.1"
+version = "0.5.2"
 authors = []
 description = "Redirect local traffic somewhere else."
 edition = "2018"
 
 [dependencies]
-env_logger = { version = "0.7", default-features = false, features = ["humantime"] }
+env_logger = { version = "0.8", default-features = false, features = ["humantime"] }
 futures = "0.3"
 http = "0.2"
 hyper = "0.13"
-hyper-rustls = "0.20"
+hyper-rustls = "0.21"
 log = "0.4"
 structopt = { version = "0.3", default-features = false }
 thiserror = "1.0"

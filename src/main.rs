@@ -7,7 +7,6 @@ mod opt;
 mod redir;
 mod routes;
 mod server;
-mod util;
 
 use structopt::StructOpt;
 
