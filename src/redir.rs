@@ -6,8 +6,6 @@ use http::uri::InvalidUri;
 use hyper::{StatusCode, Uri};
 use thiserror::Error;
 
-use crate::util::IntoOptionExt;
-
 #[derive(Debug)]
 pub struct From(String);
 
@@ -129,19 +127,16 @@ impl Rules {
                 To::Http(..) => uri.path_and_query()?.as_str(),
                 To::File(..) | To::Status(..) => uri.path(),
             };
-            req_path
-                .trim_start_matches(from.0.as_str())
-                .some_if(|&t| t != req_path)
-                .map(|req_tail| {
-                    Ok(match to {
-                        To::Http(prefix) => Action::Http((prefix.to_string() + req_tail).parse()?),
-                        To::File(prefix, fallback) => Action::File {
-                            path: prefix.join(req_tail),
-                            fallback: fallback.clone(),
-                        },
-                        To::Status(status) => Action::Status(*status),
-                    })
+            req_path.strip_prefix(from.0.as_str()).map(|req_tail| {
+                Ok(match to {
+                    To::Http(prefix) => Action::Http((prefix.to_string() + req_tail).parse()?),
+                    To::File(prefix, fallback) => Action::File {
+                        path: prefix.join(req_tail),
+                        fallback: fallback.clone(),
+                    },
+                    To::Status(status) => Action::Status(*status),
                 })
+            })
         })
     }
 }
