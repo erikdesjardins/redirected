@@ -12,7 +12,8 @@ use structopt::StructOpt;
 
 use crate::redir::Rules;
 
-fn main() -> Result<(), err::DisplayError> {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), err::DisplayError> {
     let opt::Options {
         verbose,
         listen_addr,
@@ -29,7 +30,7 @@ fn main() -> Result<(), err::DisplayError> {
         })
         .init();
 
-    server::run(&listen_addr, Rules::zip(from, to)?)?;
+    server::run(&listen_addr, Rules::zip(from, to)?).await?;
 
     Ok(())
 }
