@@ -6,11 +6,11 @@ description = "Redirect local traffic somewhere else."
 edition = "2018"
 
 [dependencies]
-env_logger = { version = "0.8", default-features = false, features = ["humantime"] }
+env_logger = { version = "0.9", default-features = false, features = ["humantime"] }
 futures = "0.3"
 http = "0.2"
 hyper = { version = "0.14", features = ["client", "server", "http1", "tcp", "stream"] }
-hyper-rustls = "0.22"
+hyper-rustls = "0.23"
 log = "0.4"
 structopt = { version = "0.3", default-features = false }
 thiserror = "1.0"

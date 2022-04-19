@@ -4,14 +4,20 @@ use std::sync::Arc;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Client, Server};
-use hyper_rustls::HttpsConnector;
+use hyper_rustls::HttpsConnectorBuilder;
 
 use crate::err::Error;
 use crate::redir::Rules;
 use crate::routes::{respond_to_request, State};
 
 pub async fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
-    let client = Client::builder().build(HttpsConnector::with_native_roots());
+    let client = Client::builder().build(
+        HttpsConnectorBuilder::new()
+            .with_native_roots()
+            .https_or_http()
+            .enable_http1()
+            .build(),
+    );
 
     let state = Arc::new(State::new(client, rules));
     let make_svc = make_service_fn(move |_| {
@@ -23,7 +29,7 @@ pub async fn run(addr: &SocketAddr, rules: Rules) -> Result<(), Error> {
         async move { Ok::<_, Infallible>(svc) }
     });
 
-    Server::try_bind(&addr)?.serve(make_svc).await?;
+    Server::try_bind(addr)?.serve(make_svc).await?;
 
     Ok(())
 }
